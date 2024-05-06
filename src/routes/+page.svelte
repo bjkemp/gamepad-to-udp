@@ -1,6 +1,7 @@
 <script>
   import 'virtual:uno.css';
 	import GamePad from './GamePad.svelte';
+  import SanityCheck from './SanityCheck.svelte';
   
 </script>
 
