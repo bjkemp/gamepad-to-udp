@@ -1,5 +1,8 @@
 <script>
-  let { isActive } = $props();
+  let { buttonName, inputs, setButtonState, ...props } = $props();
 </script>
 
-{isActive}
+<button {...props} 
+  onmousedown={setButtonState([buttonName], true)}
+  onmouseup={setButtonState([buttonName], false)}
+></button>

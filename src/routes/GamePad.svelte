@@ -1,17 +1,19 @@
 <script>
+  import InputButton from "./InputButton.svelte";
+
   let inputs = $state({
     leftStickX: 0,
     leftStickY: 0,
     rightStickX: 0,
     rightStickY: 0,
-    dpadUp: false,
-    dpadDown: false,
-    dpadLeft: false,
-    dpadRight: false,
-    button1: false,
-    button2: false,
-    button3: false,
-    button4: false,
+    dpadUp: {class: 'col-span-3 w-4 h-2 mt-1 bg-gray-400 rounded-full', state: false},
+    dpadDown: {class: 'col-span-3 w-4 h-2 mb-1 bg-gray-400 rounded-full', state: false},
+    dpadLeft: {class: 'w-4 h-2 mt-1 bg-gray-400 rounded-full rotate-90', state: false},
+    dpadRight: {class: 'w-4 h-2 mt-1 bg-gray-400 rounded-full rotate-90', state: false},
+    button1: {class: 'col-span-3 rounded-full w-5 h-5 button-1 bg-yellow-500', state: false},
+    button2: {class: 'bg-green-500 rounded-full w-5 h-5', state: false},
+    button3: {class: 'bg-red-500 rounded-full w-5 h-5', state: false},
+    button4: {class: 'col-span-3 bg-blue-500 rounded-full w-5 h-5', state: false},
     triggerLeft: 0,
     triggerRight: 0,
     bumperLeft: false,
@@ -19,13 +21,9 @@
     xboxButton: false
   })
 
-  const foo = () => {
-    console.log('Button A clicked');
-    buttonA = !buttonA;
-  }
-
-  const buttonPress = (button) => {
-    inputs[button] = !inputs[button];
+  const setButtonState = (button, state) => {
+    inputs[button].state = state;
+    inputs[button].class = state ? `${inputs[button].class} ring` : inputs[button].class.replace(' ring', '');
   }
 
   // $effect(() => {
@@ -48,23 +46,23 @@
   </div>
 
     <!-- ABXY Buttons -->  
-  <div class="grid grid-cols-3  absolute top-14 right-12 justify-items-center z-10">  
-    <button class="col-span-3 rounded-full w-5 h-5 button-1 bg-yellow-500 {inputs['button1'] ? 'ring' : ''}" onclick={() => buttonPress('button1')}></button>  
-    <button class="bg-green-500 rounded-full w-5 h-5 button-2 {inputs['button2'] ? 'ring' : ''}" onclick={() => buttonPress('button2')}></button>  
-    <div class="w-4 h-4"></div>  
-    <button class="bg-red-500 rounded-full w-5 h-5 button-3 {inputs['button3'] ? 'ring' : ''}" onclick={() => buttonPress('button3')}></button>  
-    <button class="col-span-3 bg-blue-500 rounded-full w-5 h-5 button-4 {inputs['button4'] ? 'ring' : ''}" onclick={() => buttonPress('button4')}></button>
+  <div class="grid grid-cols-3 absolute top-14 right-12 justify-items-center z-10">  
+    {#each ['1', '2', '3', '4'] as b }
+      <button class="{inputs[`button${b}`].class}" onmousedown={() => setButtonState(`button${b}`, true)} onmouseup={() => setButtonState(`button${b}`, false)} onmouseleave={() => setButtonState(`button${b}`, false)}></button>
+      {#if b === '2'}
+        <div class="w-4 h-4"></div>
+      {/if}
+    {/each}
   </div>
 
   <!-- D-Pad -->
-  <div class="absolute top-24 left-26 w-10 h-10 bg-gray-600 rounded-full flex flex-col justify-center items-center z-10">
-    <div class="w-3 h-1 bg-gray-400 rounded-full mb-1"></div>  
-    <div class="flex">
-      <div class="w-1 h-3 bg-gray-400 rounded-full mr-1 hover:bg-yellow-600"></div>
-      <div class="w-3 h-1 bg-gray-600 rounded-full"></div>  
-      <div class="w-1 h-3 bg-gray-400 rounded-full ml-1"></div>
-    </div>
-    <div class="w-3 h-1 bg-gray-400 rounded-full mt-1"></div>
+  <div class="grid grid-cols-3 absolute top-24 left-26 w-10 h-10 bg-gray-600 rounded-full justify-items-center z-10">  
+    {#each ['Up', 'Left', 'Right', 'Down'] as b }
+      <button class="{inputs[`dpad${b}`].class}" onmousedown={() => setButtonState(`dpad${b}`, true)} onmouseup={() => setButtonState(`dpad${b}`, false)}  onmouseleave={() => setButtonState(`dpad${b}`, false)}></button>
+      {#if b === 'Left'}
+        <div class="w-2 h-4"></div>
+      {/if}
+    {/each}
   </div>
 
   <!-- Right Stick -->
@@ -96,7 +94,7 @@
   <thead>
     <tr>
       <th>Input</th>
-      <th>Description</th>
+      <th>State</th>
     </tr>
   </thead>
   <tbody>
@@ -112,10 +110,21 @@
       <td>D-Pad</td>
       <td>Directional input</td>
     </tr>
-    <tr>
-      <td>A/B/X/Y Buttons</td>
-      <td>Action buttons</td>
-    </tr>
+
+    {#each ['Up', 'Down', 'Left', 'Right'] as b }
+      <tr>
+        <td>DPad {b}</td>
+        <td>{inputs[`dpad${b}`].state ? 'On' : 'Off'}</td>
+      </tr>
+    {/each}
+
+    {#each [1,2,3,4] as b }
+      <tr>
+        <td>Button {b}</td>
+        <td>{inputs[`button${b}`].state ? 'On' : 'Off'}</td>
+      </tr>
+    {/each}
+
     <tr>
       <td>Triggers</td>
       <td>Additional actions</td>
