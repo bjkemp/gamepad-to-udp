@@ -1,35 +1,118 @@
 <script>
-  import InputButton from "./InputButton.svelte";
+  import { onMount } from 'svelte';
+  import 'joypad.js';
 
-  let inputs = $state({
-    leftStickX: 0,
-    leftStickY: 0,
-    rightStickX: 0,
-    rightStickY: 0,
-    dpadUp: {class: 'col-span-3 w-4 h-2 mt-1 bg-gray-400 rounded-full', state: false},
-    dpadDown: {class: 'col-span-3 w-4 h-2 mb-1 bg-gray-400 rounded-full', state: false},
-    dpadLeft: {class: 'w-4 h-2 mt-1 bg-gray-400 rounded-full rotate-90', state: false},
-    dpadRight: {class: 'w-4 h-2 mt-1 bg-gray-400 rounded-full rotate-90', state: false},
-    button1: {class: 'col-span-3 rounded-full w-5 h-5 button-1 bg-yellow-500', state: false},
-    button2: {class: 'bg-green-500 rounded-full w-5 h-5', state: false},
-    button3: {class: 'bg-red-500 rounded-full w-5 h-5', state: false},
-    button4: {class: 'col-span-3 bg-blue-500 rounded-full w-5 h-5', state: false},
-    triggerLeft: 0,
-    triggerRight: 0,
-    bumperLeft: false,
-    bumperRight: false,
-    xboxButton: false
+  const buttonClasses = $state({
+    Up: 'col-span-3 w-4 h-2 mt-1 bg-gray-400 rounded-full',
+    Down: 'col-span-3 w-4 h-2 mb-1 bg-gray-400 rounded-full',
+    Left: 'w-4 h-2 mt-1 bg-gray-400 rounded-full rotate-90',
+    Right: 'w-4 h-2 mt-1 bg-gray-400 rounded-full rotate-90',
+    button_0: 'col-span-3 bg-green-500 rounded-full w-5 h-5',
+    button_1: 'bg-red-500 rounded-full w-5 h-5',
+    button_2: 'bg-blue-500 rounded-full w-5 h-5',
+    button_3: 'col-span-3 rounded-full w-5 h-5 button-1 bg-yellow-500',
   })
 
+  let gamepad = $state(null);
+  let gamepadName = $state('');
+  let gamepadIndex = $state(0);
+  let gamepadConnected = $state(false);
+
+  let port = $state(8080);
+  let ip = $state('localhost')
+
+  let inputs = $state({})
+
+  // let inputs = $state({
+  //   leftStickX: {state: 0, class: '', type: 'integer'},
+  //   leftStickY: {state: 0, class: '', type: 'integer'},
+  //   rightStickX: {state: 0, class: '', type: 'integer'},
+  //   rightStickY: {state: 0, class: '', type: 'integer'},
+  //   dpadUp: {class: 'col-span-3 w-4 h-2 mt-1 bg-gray-400 rounded-full', state: false, type: 'binary'},
+  //   dpadDown: {class: 'col-span-3 w-4 h-2 mb-1 bg-gray-400 rounded-full', state: false, type: 'binary'},
+  //   dpadLeft: {class: 'w-4 h-2 mt-1 bg-gray-400 rounded-full rotate-90', state: false, type: 'binary'},
+  //   dpadRight: {class: 'w-4 h-2 mt-1 bg-gray-400 rounded-full rotate-90', state: false, type: 'binary'},
+  //   button1: {class: 'col-span-3 rounded-full w-5 h-5 button-1 bg-yellow-500', state: false, type: 'binary'},
+  //   button2: {class: 'bg-green-500 rounded-full w-5 h-5', state: false, type: 'binary'},
+  //   button3: {class: 'bg-red-500 rounded-full w-5 h-5', state: false, type: 'binary'},
+  //   button4: {class: 'col-span-3 bg-blue-500 rounded-full w-5 h-5', state: false, type: 'binary'},
+  //   triggerLeft: {state: 0, class: '', type: 'integer'},
+  //   triggerRight: {state: 0, class: '', type: 'integer'},
+  //   bumperLeft: {state: false, class: '', type: 'binary'},
+  //   bumperRight: {state: false, class: '', type: 'binary'},
+  //   xboxButton: {state: false, class: '', type: 'binary'}
+  // })
+
   const setButtonState = (button, state) => {
-    inputs[button].state = state;
-    inputs[button].class = state ? `${inputs[button].class} ring` : inputs[button].class.replace(' ring', '');
+    if (!inputs[button]) return;
+
+    inputs[button].pressed = state;
+
+    if (state)
+      inputs[button].value = 1
+    else
+      inputs[button].value = 0
+
+    // inputs[button].class = state ? `${inputs[button].class} ring` : inputs[button].class.replace(' ring', '');
   }
 
-  // $effect(() => {
-  //   console.log('Left Stick:', leftStickX, leftStickY);
+  joypad.on('connect', (e) => {
+    console.log('Gamepad connected: ', e.gamepad.id);
+    gamepad = e.gamepad;
+    gamepadConnected = true;
+    gamepadName = gamepad.id;
 
-  // });
+    // Populate inputs with gamepad buttons
+    gamepad.buttons.forEach((button, i) => {
+      inputs[`button_${i}`] = {pressed: button.pressed, value: button.value};
+      
+    });
+
+  });
+
+  joypad.on('disconnect', (e) => {
+    console.log('Gamepad disconnected: ', e.gamepad.id);
+    gamepadConnected = false;
+    gamepadName = '';
+  });
+
+  // Update button states on any gamepad change
+  joypad.on('button_press', (e) => {
+    const buttonName = e.detail.buttonName;
+    if (!buttonName) return;
+    if (!inputs[buttonName]) return;
+
+    buttonPressHandler(buttonName, e.detail.button.pressed, e.detail.button.value)
+
+  });
+
+  joypad.on('button_release', (e) => {
+    const buttonName = e.detail.buttonName;
+    if (!buttonName) return;
+    if (!inputs[buttonName]) return;
+
+    buttonReleaseHandler(buttonName)
+  });
+
+  function buttonPressHandler(b, pressed, value) {
+    if (!inputs) return;
+
+    inputs[b].pressed = pressed;
+    inputs[b].value = value;
+
+    if (!buttonClasses[b]?.includes('ring'))
+      buttonClasses[b] = `${buttonClasses[b]} ring`;
+  }
+
+  function buttonReleaseHandler(b) {
+    if (!inputs[b]) return;
+
+    inputs[b].pressed = false;
+    inputs[b].value = 0;
+
+    if (buttonClasses[b]?.includes('ring'))
+      buttonClasses[b] = buttonClasses[b].replace('ring', '');
+  }
 </script>
 
 <div class="w-80 h-40 bg-gray-900 rounded-lg shadow-lg relative">
@@ -47,8 +130,8 @@
 
     <!-- ABXY Buttons -->  
   <div class="grid grid-cols-3 absolute top-14 right-12 justify-items-center z-10">  
-    {#each ['1', '2', '3', '4'] as b }
-      <button class="{inputs[`button${b}`].class}" onmousedown={() => setButtonState(`button${b}`, true)} onmouseup={() => setButtonState(`button${b}`, false)} onmouseleave={() => setButtonState(`button${b}`, false)}></button>
+    {#each ['3', '2', '1', '0'] as b }
+      <button class="{buttonClasses[`button_${b}`]}" onmousedown={() => buttonPressHandler(`button_${b}`, true, 1)} onmouseup={() => buttonReleaseHandler(`button_${b}`)} onmouseleave={() => buttonReleaseHandler(`button_${b}`)}></button>
       {#if b === '2'}
         <div class="w-4 h-4"></div>
       {/if}
@@ -58,7 +141,7 @@
   <!-- D-Pad -->
   <div class="grid grid-cols-3 absolute top-24 left-26 w-10 h-10 bg-gray-600 rounded-full justify-items-center z-10">  
     {#each ['Up', 'Left', 'Right', 'Down'] as b }
-      <button class="{inputs[`dpad${b}`].class}" onmousedown={() => setButtonState(`dpad${b}`, true)} onmouseup={() => setButtonState(`dpad${b}`, false)}  onmouseleave={() => setButtonState(`dpad${b}`, false)}></button>
+      <button class="{buttonClasses[b]}" onmousedown={() => setButtonState(`button${b}`, true)} onmouseup={() => setButtonState(`dpad${b}`, false)}  onmouseleave={() => setButtonState(`dpad${b}`, false)}></button>
       {#if b === 'Left'}
         <div class="w-2 h-4"></div>
       {/if}
@@ -89,53 +172,28 @@
   </div>
 </div>
 
+{#if gamepadConnected}
+  <h3>{gamepadName}</h3>
+{:else}
+  <h3>No gamepad connected. Press a button on the controller to try again.</h3>
+{/if}
+
 <!-- Controller Input Table -->
 <table class="table-auto mt-4">
   <thead>
     <tr>
       <th>Input</th>
-      <th>State</th>
+      <th>Pressed</th>
+      <th>Value</th>
     </tr>
   </thead>
   <tbody>
-    <tr>
-      <td>Left Stick</td>
-      <td>Controls movement</td>
-    </tr>
-    <tr>
-      <td>Right Stick</td>
-      <td>Controls camera</td>
-    </tr>
-    <tr>
-      <td>D-Pad</td>
-      <td>Directional input</td>
-    </tr>
-
-    {#each ['Up', 'Down', 'Left', 'Right'] as b }
+    {#each Object.keys(inputs) as input}
       <tr>
-        <td>DPad {b}</td>
-        <td>{inputs[`dpad${b}`].state ? 'On' : 'Off'}</td>
+        <td>{input}</td>
+        <td>{inputs[input]?.pressed}</td>
+        <td>{inputs[input]?.value}</td>
       </tr>
     {/each}
-
-    {#each [1,2,3,4] as b }
-      <tr>
-        <td>Button {b}</td>
-        <td>{inputs[`button${b}`].state ? 'On' : 'Off'}</td>
-      </tr>
-    {/each}
-
-    <tr>
-      <td>Triggers</td>
-      <td>Additional actions</td>
-    </tr>
-    <tr>
-      <td>Bumpers</td>
-      <td>Additional actions</td>
-    </tr>
-    <tr>
-      <td>Xbox Button</td>
-      <td>System menu</td>
-    </tr>
   </tbody>
 </table>

@@ -10,18 +10,19 @@
 		"format": "prettier --write ."
 	},
 	"devDependencies": {
-		"@sveltejs/adapter-auto": "^3.0.0",
-		"@sveltejs/kit": "^2.0.0",
-		"@sveltejs/vite-plugin-svelte": "^3.0.0",
-		"prettier": "^3.1.1",
-		"prettier-plugin-svelte": "^3.1.2",
+		"@sveltejs/adapter-auto": "^3.2.0",
+		"@sveltejs/kit": "^2.5.7",
+		"@sveltejs/vite-plugin-svelte": "^3.1.0",
+		"prettier": "^3.2.5",
+		"prettier-plugin-svelte": "^3.2.3",
 		"svelte": "^5.0.0-next.1",
-		"vite": "^5.0.3"
+		"vite": "^5.2.11"
 	},
 	"type": "module",
 	"dependencies": {
 		"@unocss/preset-wind": "^0.59.4",
 		"@unocss/svelte-scoped": "^0.59.4",
+		"joypad.js": "^2.3.5",
 		"unocss": "^0.59.4"
 	}
 }
