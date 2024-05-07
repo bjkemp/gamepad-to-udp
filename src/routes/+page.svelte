@@ -5,8 +5,8 @@
 </script>
 
 <svelte:head>
-	<title>Home</title>
-	<meta name="description" content="Svelte demo app" />
+	<title>Gamepad to UDP</title>
+	<meta name="description" content="Send Gamepad Events via UDP to an IP Address" />
 </svelte:head>
 
 <section>

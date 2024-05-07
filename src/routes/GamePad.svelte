@@ -14,34 +14,21 @@
   })
 
   let gamepad = $state(null);
-  let gamepadName = $state('');
+  let gamepadName = $state('Press a button to continue...');
   let gamepadConnected = $state(false);
 
-  let port = $state(8080);
   let ip = $state('localhost')
+  let port = $state(8080);
 
   let inputs = $state({})
   let log = $state([])
 
-  // let inputs = $state({
-  //   leftStickX: {state: 0, class: '', type: 'integer'},
-  //   leftStickY: {state: 0, class: '', type: 'integer'},
-  //   rightStickX: {state: 0, class: '', type: 'integer'},
-  //   rightStickY: {state: 0, class: '', type: 'integer'},
-  //   dpadUp: {class: 'col-span-3 w-4 h-2 mt-1 bg-gray-400 rounded-full', state: false, type: 'binary'},
-  //   dpadDown: {class: 'col-span-3 w-4 h-2 mb-1 bg-gray-400 rounded-full', state: false, type: 'binary'},
-  //   dpadLeft: {class: 'w-4 h-2 mt-1 bg-gray-400 rounded-full rotate-90', state: false, type: 'binary'},
-  //   dpadRight: {class: 'w-4 h-2 mt-1 bg-gray-400 rounded-full rotate-90', state: false, type: 'binary'},
-  //   button1: {class: 'col-span-3 rounded-full w-5 h-5 button-1 bg-yellow-500', state: false, type: 'binary'},
-  //   button2: {class: 'bg-green-500 rounded-full w-5 h-5', state: false, type: 'binary'},
-  //   button3: {class: 'bg-red-500 rounded-full w-5 h-5', state: false, type: 'binary'},
-  //   button4: {class: 'col-span-3 bg-blue-500 rounded-full w-5 h-5', state: false, type: 'binary'},
-  //   triggerLeft: {state: 0, class: '', type: 'integer'},
-  //   triggerRight: {state: 0, class: '', type: 'integer'},
-  //   bumperLeft: {state: false, class: '', type: 'binary'},
-  //   bumperRight: {state: false, class: '', type: 'binary'},
-  //   xboxButton: {state: false, class: '', type: 'binary'}
-  // })
+  let sortedInputs  = $derived(
+    Object.keys(inputs)
+      .map(key => parseInt(key.replace('button_', '')))
+      .sort((a, b) => a - b)
+      .map(num => 'button_' + num)
+  );
 
   const setButtonState = (button, state) => {
     if (!inputs[button]) return;
@@ -65,9 +52,7 @@
     // Populate inputs with gamepad buttons
     gamepad.buttons.forEach((button, i) => {
       inputs[`button_${i}`] = {pressed: button.pressed, value: button.value};
-      
     });
-
   });
 
   joypad.on('disconnect', (e) => {
@@ -83,7 +68,6 @@
     if (!inputs[buttonName]) return;
 
     buttonPressHandler(buttonName, e.detail.button.pressed, e.detail.button.value)
-
   });
 
   joypad.on('button_release', (e) => {
@@ -96,12 +80,20 @@
 
   function buttonPressHandler(b, pressed, value) {
     if (!inputs) return;
+    if (!inputs[b]) {
+      inputs[b] = {pressed, value};
+    }
+
+    if (!gamepad)
+      gamepadName = '';
 
     inputs[b].pressed = pressed;
     inputs[b].value = value;
 
     if (!buttonClasses[b]?.includes('ring'))
       buttonClasses[b] = `${buttonClasses[b]} ring`;
+
+    sendUDP();
   }
 
   function buttonReleaseHandler(b) {
@@ -112,6 +104,8 @@
 
     if (buttonClasses[b]?.includes('ring'))
       buttonClasses[b] = buttonClasses[b].replace('ring', '');
+
+    sendUDP();
   }
 
   // Update the gamepad state every frame
@@ -119,7 +113,10 @@
     if (!navigator.getGamepads) return;
     const gamepads = navigator.getGamepads();
     if (!gamepads) return;
-    const gamepad = gamepads[0]; // Use the first gamepad
+
+    if (!gamepad)
+      gamepad = gamepads[0]; // Use the first gamepad
+
     if (!gamepad) return;
 
     // Read the value of the analog triggers
@@ -132,7 +129,28 @@
       button_6: {value: leftTriggerValue, pressed: leftTriggerValue > 0.00001},
       button_7: {value: rightTriggerValue, pressed: rightTriggerValue > 0.00001},
     };
+
+    sendUDP();
   }
+
+  async function sendUDP() {
+    const response = await fetch(`/api/sendUDP`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        ip: ip,
+        port: port,
+        data: [...Object.values(inputs).slice(4).map(button => button.value), 0xff]
+      })
+    });
+
+    if (!response.ok) {
+      console.error('Failed to send UDP message:', await response.text());
+    }
+  }
+
 
   // Call updateGamepadState every frame
   let animationFrameId;
@@ -146,8 +164,6 @@
   onDestroy(() => {
     cancelAnimationFrame(animationFrameId);
   });
-
-
 </script>
 
 <div class="grid grid-cols-3 gap-10">
@@ -163,7 +179,7 @@
         </tr>
       </thead>
       <tbody>
-        {#each Object.keys(inputs) as input}
+        {#each sortedInputs as input}
           <tr>
             <td>{input}</td>
             <td>{inputs[input]?.pressed}</td>
@@ -233,11 +249,7 @@
       </div>
     </div>
     
-    {#if gamepadConnected}
-      <h3>{gamepadName}</h3>
-    {:else}
-      <h3>Connect your gamepad and press a button to begin.</h3>
-    {/if}
+    <h3>{gamepadName}</h3>
 
     <div class="flex gap-2">
 
