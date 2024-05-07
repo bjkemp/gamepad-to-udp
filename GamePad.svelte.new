@@ -2,9 +2,6 @@
   import { onMount, onDestroy } from 'svelte';
   import 'joypad.js';
 
-  const numButtons = 18;
-  const numAxes = 4;
-
   const buttonClasses = $state({
     Up: 'col-span-3 w-4 h-2 mt-1 bg-gray-400 rounded-full',
     Down: 'col-span-3 w-4 h-2 mb-1 bg-gray-400 rounded-full',
@@ -17,39 +14,34 @@
   })
 
   let gamepad = $state(null);
-  let gamepadName = $state('Press a button to continue...');
+  let gamepadName = $state('');
   let gamepadConnected = $state(false);
 
   let port = $state(8080);
   let ip = $state('localhost')
 
-  let inputs = $state({
-    axis_0: {value: 0},   // Left stick horizontal
-    axis_1: {value: 0},   // Left stick vertical
-    axis_2: {value: 0},   // Right stick horizontal
-    axis_3: {value: 0},   // Right stick vertical
-
-    button_0: {value: 0, pressed: false},   // Bottom button in right cluster
-    button_1: {value: 0, pressed: false},   // Right button in right cluster
-    button_2: {value: 0, pressed: false},   // Left button in right cluster
-    button_3: {value: 0, pressed: false},   // Top button in right cluster
-    button_4: {value: 0, pressed: false},   // Shoulder button left
-    button_5: {value: 0, pressed: false},   // Shoulder button right
-    button_6: {value: 0, pressed: false},   // Left trigger
-    button_7: {value: 0, pressed: false},   // Right trigger
-    button_8: {value: 0, pressed: false},   // Left button in center cluster
-    button_9: {value: 0, pressed: false},   // Right button in center cluster
-    button_10: {value: 0, pressed: false},  // Left stick press
-    button_11: {value: 0, pressed: false},  // Right stick press
-    button_12: {value: 0, pressed: false},  // Top button in left cluster
-    button_13: {value: 0, pressed: false},  // Bottom button in left cluster
-    button_14: {value: 0, pressed: false},  // Left button in left cluster
-    button_15: {value: 0, pressed: false},  // Right button in left cluster
-    button_16: {value: 0, pressed: false},  // Vendor button 1
-    button_17: {value: 0, pressed: false},  // Vendor button 2
-  })
-
+  let inputs = $state({})
   let log = $state([])
+
+  // let inputs = $state({
+  //   leftStickX: {state: 0, class: '', type: 'integer'},
+  //   leftStickY: {state: 0, class: '', type: 'integer'},
+  //   rightStickX: {state: 0, class: '', type: 'integer'},
+  //   rightStickY: {state: 0, class: '', type: 'integer'},
+  //   dpadUp: {class: 'col-span-3 w-4 h-2 mt-1 bg-gray-400 rounded-full', state: false, type: 'binary'},
+  //   dpadDown: {class: 'col-span-3 w-4 h-2 mb-1 bg-gray-400 rounded-full', state: false, type: 'binary'},
+  //   dpadLeft: {class: 'w-4 h-2 mt-1 bg-gray-400 rounded-full rotate-90', state: false, type: 'binary'},
+  //   dpadRight: {class: 'w-4 h-2 mt-1 bg-gray-400 rounded-full rotate-90', state: false, type: 'binary'},
+  //   button1: {class: 'col-span-3 rounded-full w-5 h-5 button-1 bg-yellow-500', state: false, type: 'binary'},
+  //   button2: {class: 'bg-green-500 rounded-full w-5 h-5', state: false, type: 'binary'},
+  //   button3: {class: 'bg-red-500 rounded-full w-5 h-5', state: false, type: 'binary'},
+  //   button4: {class: 'col-span-3 bg-blue-500 rounded-full w-5 h-5', state: false, type: 'binary'},
+  //   triggerLeft: {state: 0, class: '', type: 'integer'},
+  //   triggerRight: {state: 0, class: '', type: 'integer'},
+  //   bumperLeft: {state: false, class: '', type: 'binary'},
+  //   bumperRight: {state: false, class: '', type: 'binary'},
+  //   xboxButton: {state: false, class: '', type: 'binary'}
+  // })
 
   const setButtonState = (button, state) => {
     if (!inputs[button]) return;
@@ -61,7 +53,7 @@
     else
       inputs[button].value = 0
 
-    inputs[button].class = state ? `${inputs[button].class} ring` : inputs[button].class.replace(' ring', '');
+    // inputs[button].class = state ? `${inputs[button].class} ring` : inputs[button].class.replace(' ring', '');
   }
 
   joypad.on('connect', (e) => {
@@ -105,8 +97,8 @@
   function buttonPressHandler(b, pressed, value) {
     if (!inputs) return;
 
-    // inputs[b].pressed = pressed;
-    // inputs[b].value = value;
+    inputs[b].pressed = pressed;
+    inputs[b].value = value;
 
     if (!buttonClasses[b]?.includes('ring'))
       buttonClasses[b] = `${buttonClasses[b]} ring`;
@@ -115,8 +107,8 @@
   function buttonReleaseHandler(b) {
     if (!inputs[b]) return;
 
-    // inputs[b].pressed = false;
-    // inputs[b].value = 0;
+    inputs[b].pressed = false;
+    inputs[b].value = 0;
 
     if (buttonClasses[b]?.includes('ring'))
       buttonClasses[b] = buttonClasses[b].replace('ring', '');
@@ -130,30 +122,15 @@
     const gamepad = gamepads[0]; // Use the first gamepad
     if (!gamepad) return;
 
-    // Get gamepad state
-    const this_state = {}
-    for (let i = 0; i < gamepad.buttons.length; i++) {
-      let this_value = gamepad.buttons[i].value;
-
-      // Normalize the value of the button to 0 through 255
-      
-
-
-      this_state[`button_${i}`] = {value: gamepad.buttons[i].value, pressed: gamepad.buttons[i].value > 0.000001};
-    }
-
-    // Read the value of all buttons
-    
-
-    // // Read the value of the analog triggers
-    // const leftTriggerValue = gamepad.buttons[6].value;
-    // const rightTriggerValue = gamepad.buttons[7].value;
+    // Read the value of the analog triggers
+    const leftTriggerValue = gamepad.buttons[6].value;
+    const rightTriggerValue = gamepad.buttons[7].value;
 
     // Update the inputs object
     inputs = {
-      ...this_state,
-      // button_6: {value: leftTriggerValue, pressed: leftTriggerValue > 0.05},
-      // button_7: {value: rightTriggerValue, pressed: rightTriggerValue > 0.05},
+      ...inputs,
+      button_6: {value: leftTriggerValue, pressed: leftTriggerValue > 0.05},
+      button_7: {value: rightTriggerValue, pressed: rightTriggerValue > 0.05},
     };
   }
 
@@ -256,7 +233,11 @@
       </div>
     </div>
     
-    <h3>{gamepadName}</h3>
+    {#if gamepadConnected}
+      <h3>{gamepadName}</h3>
+    {:else}
+      <h3>Connect your gamepad and press a button to begin.</h3>
+    {/if}
 
     <div class="flex gap-2">
 
@@ -275,3 +256,5 @@
     <h3>Log</h3>
   </div>
 </div>
+
+
