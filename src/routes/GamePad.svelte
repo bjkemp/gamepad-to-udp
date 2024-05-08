@@ -8,7 +8,8 @@
 
   let port = $state(8080);
   let ip = $state('localhost');
-  let interval = 100;
+  let interval = $state(100);
+  let intervalId = $state(null);
 
   let inputs = $state({
     axis_0: {value: 0, label: 'Left Stick Horizontal'},
@@ -147,8 +148,11 @@
 
     // Shift the oldest log entry when the log reaches 100 entries
     if (log.length > 100) log.pop();
-
   }
+
+  $effect(() => {
+    intervalId = setInterval(sendUDP, interval)
+  });
 
   // Call updateGamepadState every frame
   let animationFrameId;
@@ -158,7 +162,7 @@
       animationFrameId = requestAnimationFrame(update);
     });
 
-    setInterval(sendUDP, interval)
+    intervalId = setInterval(sendUDP, interval)
   });
 
   onDestroy(() => {
@@ -257,6 +261,11 @@
         <label for="port" class="mr-1">Port:</label>
         <input type="number" id="port" bind:value={port} class="w-20 h-6">
       </div>
+
+      <label for="interval">
+        Interval ({interval} ms):
+        <input type="range" id="interval" bind:value={interval} class="w-20 h-6">
+      </label>
     </div>
 
     {#if coin_inserted}
