@@ -1,6 +1,6 @@
 # 🕹️ Gamepad to UDP 🚀
 
-Welcome to Gamepad to UDP! This project is a Svelte component that transforms your joystick data into UDP packets and sends them to a receiving program. It also provides a user-friendly interface for joystick selection, IP/port configuration, and data visualization.
+Welcome to Gamepad to UDP! This project is a Svelte/Vite project that transforms your joystick data into UDP packets and sends them to a receiving program. It also provides a user-friendly interface for joystick selection, IP/port configuration, and data visualization.
 
 ## 🌟 Features
 
