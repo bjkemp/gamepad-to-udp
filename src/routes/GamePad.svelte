@@ -2,71 +2,49 @@
   import { onMount, onDestroy } from 'svelte';
   import 'joypad.js';
 
-  const numButtons = 18;
-  const numAxes = 4;
-
-  const buttonClasses = $state({
-    Up: 'col-span-3 w-4 h-2 mt-1 bg-gray-400 rounded-full',
-    Down: 'col-span-3 w-4 h-2 mb-1 bg-gray-400 rounded-full',
-    Left: 'w-4 h-2 mt-1 bg-gray-400 rounded-full rotate-90',
-    Right: 'w-4 h-2 mt-1 bg-gray-400 rounded-full rotate-90',
-    button_0: 'col-span-3 bg-green-500 rounded-full w-5 h-5',
-    button_1: 'bg-red-500 rounded-full w-5 h-5',
-    button_2: 'bg-blue-500 rounded-full w-5 h-5',
-    button_3: 'col-span-3 rounded-full w-5 h-5 button-1 bg-yellow-500',
-  })
-
   let gamepad = $state(null);
   let gamepadName = $state('Press a button to continue...');
-  let gamepadConnected = $state(false);
+  let coin_inserted = $state(false);
 
   let port = $state(8080);
-  let ip = $state('localhost')
+  let ip = $state('localhost');
+  let interval = 100;
 
   let inputs = $state({
-    axis_0: {value: 0, label: 'Left Stick Horizontal'},   // Left stick horizontal
-    axis_1: {value: 0, label: 'Left Stick Vertical'},   // Left stick vertical
-    axis_2: {value: 0, label: 'Right Stick Horizontal'},   // Right stick horizontal
-    axis_3: {value: 0, label: 'Right Stick Vertical'},   // Right stick vertical
+    axis_0: {value: 0, label: 'Left Stick Horizontal'},
+    axis_1: {value: 0, label: 'Left Stick Vertical'},
+    axis_2: {value: 0, label: 'Right Stick Horizontal'},
+    axis_3: {value: 0, label: 'Right Stick Vertical'}, 
 
-    button_0: {value: 0, label: 'Right Cluster Bottom'},   // Bottom button in right cluster
-    button_1: {value: 0, label: 'Right Cluster Right'},   // Right button in right cluster
-    button_2: {value: 0, label: 'Right Cluster Left'},   // Left button in right cluster
-    button_3: {value: 0, label: 'Right Cluster Top'},   // Top button in right cluster
-    button_4: {value: 0, label: 'Shoulder Button Left'},   // Shoulder button left
-    button_5: {value: 0, label: 'Shoulder Button Right'},   // Shoulder button right
-    button_6: {value: 0, label: 'Left Trigger'},   // Left trigger
-    button_7: {value: 0, label: 'Right Trigger'},   // Right trigger
-    button_8: {value: 0, label: 'Center Cluster Left'},   // Left button in center cluster
-    button_9: {value: 0, label: 'Center Cluster Right'},   // Right button in center cluster
-    button_10: {value: 0, label: 'Left Stick Press'},  // Left stick press
-    button_11: {value: 0, label: 'Right Stick Press'},  // Right stick press
-    button_12: {value: 0, label: 'Left Cluster Top'},  // Top button in left cluster
-    button_13: {value: 0, label: 'Left Cluster Bottom'},  // Bottom button in left cluster
-    button_14: {value: 0, label: 'Left Cluster Left'},  // Left button in left cluster
-    button_15: {value: 0, label: 'Left Cluster Right'},  // Right button in left cluster
-    button_16: {value: 0, label: 'Vendor Button 1'},  // Vendor button 1
-    button_17: {value: 0, label: 'Vendor Button 2'},  // Vendor button 2
+    button_0: {value: 0, label: 'Right Cluster Bottom', class: 'col-span-3 bg-green-500 rounded-full w-5 h-5'},
+    button_1: {value: 0, label: 'Right Cluster Right', class: 'bg-red-500 rounded-full w-5 h-5'},
+    button_2: {value: 0, label: 'Right Cluster Left', class: 'bg-blue-500 rounded-full w-5 h-5'},
+    button_3: {value: 0, label: 'Right Cluster Top', class: 'col-span-3 rounded-full w-5 h-5 button-1 bg-yellow-500'},
+    button_4: {value: 0, label: 'Shoulder Button Left', class: ''},
+    button_5: {value: 0, label: 'Shoulder Button Right', class: ''},
+    button_6: {value: 0, label: 'Left Trigger', class: ''},
+    button_7: {value: 0, label: 'Right Trigger', class: ''},
+    button_8: {value: 0, label: 'Center Cluster Left', class: ''},
+    button_9: {value: 0, label: 'Center Cluster Right', class: ''},
+    button_10: {value: 0, label: 'Left Stick Press', class: ''},
+    button_11: {value: 0, label: 'Right Stick Press', class: ''},
+    button_12: {value: 0, label: 'Left Cluster Top', class: 'col-span-3 w-4 h-2 mt-1 bg-gray-400 rounded-full'},
+    button_13: {value: 0, label: 'Left Cluster Bottom', class: 'col-span-3 w-4 h-2 mb-1 bg-gray-400 rounded-full'},
+    button_14: {value: 0, label: 'Left Cluster Left', class: 'w-4 h-2 mt-1 bg-gray-400 rounded-full rotate-90'},
+    button_15: {value: 0, label: 'Left Cluster Right', class: 'w-4 h-2 mt-1 bg-gray-400 rounded-full rotate-90'},
+    button_16: {value: 0, label: 'Vendor Button 1', class: ''},
+    button_17: {value: 0, label: 'Vendor Button 2', class: ''},
   })
 
   let log = $state([])
-
-  const setButtonState = (button, state) => {
-    if (!inputs[button]) return;
-
-    if (state)
-      inputs[button].value = 1
-    else
-      inputs[button].value = 0
-
-    inputs[button].class = state ? `${inputs[button].class} ring` : inputs[button].class.replace(' ring', '');
-  }
 
   joypad.on('connect', (e) => {
     console.log('Gamepad connected: ', e.gamepad.id);
     gamepad = e.gamepad;
     gamepadConnected = true;
     gamepadName = gamepad.id;
+
+    coin_inserted = true;
   });
 
   joypad.on('disconnect', (e) => {
@@ -95,7 +73,10 @@
 
   function buttonPressHandler(b, value) {
     if (!inputs) return;
-    // inputs[b].value = value;
+
+    if (!coin_inserted) coin_inserted = true;
+
+    inputs[b].value = value;
 
     if (!buttonClasses[b]?.includes('ring'))
       buttonClasses[b] = `${buttonClasses[b]} ring`;
@@ -104,7 +85,7 @@
   function buttonReleaseHandler(b) {
     if (!inputs[b]) return;
 
-    // inputs[b].value = 0;
+    inputs[b].value = 0;
 
     if (buttonClasses[b]?.includes('ring'))
       buttonClasses[b] = buttonClasses[b].replace('ring', '');
@@ -127,7 +108,7 @@
 
       // Normalize the value of the axis for Arduino (0-255)
       this_value = Math.round((this_value + 1) * 127.5);
-      this_state[`axis_${i}`] = {value: this_value, label: inputs[`axis_${i}`]?.label};
+      this_state[`axis_${i}`] = {value: this_value, label: inputs[`axis_${i}`]?.label, class: inputs[`axis_${i}`].class};
     }
 
     // Read the value of all buttons
@@ -136,11 +117,16 @@
 
       // Normalize the value of the button for Arduino (0-255)
       this_value = Math.round(this_value * 255);
-      this_state[`button_${i}`] = {value: this_value, label: inputs[`button_${i}`]?.label};
+      this_state[`button_${i}`] = {value: this_value, label: inputs[`button_${i}`]?.label, class: inputs[`button_${i}`].class};
     }
 
     // Update the inputs object
     inputs = {...this_state};
+  }
+
+  // Send current state
+  function sendUDP() {
+    
   }
 
   // Call updateGamepadState every frame
@@ -155,8 +141,6 @@
   onDestroy(() => {
     cancelAnimationFrame(animationFrameId);
   });
-
-
 </script>
 
 <div class="grid grid-cols-3 gap-10">
@@ -184,7 +168,6 @@
   </div>
 
   <div class="">
-
     <div class="w-80 h-40 bg-gray-900 rounded-lg shadow-lg relative">
       <!-- Body -->
       <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-5/6 h-4/5 bg-gray-800 rounded-lg"></div>
@@ -201,7 +184,7 @@
         <!-- ABXY Buttons -->  
       <div class="grid grid-cols-3 absolute top-14 right-12 justify-items-center z-10">  
         {#each ['3', '2', '1', '0'] as b }
-          <button class="{buttonClasses[`button_${b}`]}" onmousedown={() => buttonPressHandler(`button_${b}`, true, 1)} onmouseup={() => buttonReleaseHandler(`button_${b}`)} onmouseleave={() => buttonReleaseHandler(`button_${b}`)}></button>
+          <button class="{inputs[`button_${b}`].class}" onmousedown={() => buttonPressHandler(`button_${b}`, 255)} onmouseup={() => buttonReleaseHandler(`button_${b}`)} onmouseleave={() => buttonReleaseHandler(`button_${b}`)}></button>
           {#if b === '2'}
             <div class="w-4 h-4"></div>
           {/if}
@@ -210,9 +193,9 @@
     
       <!-- D-Pad -->
       <div class="grid grid-cols-3 absolute top-24 left-26 w-10 h-10 bg-gray-600 rounded-full justify-items-center z-10">  
-        {#each ['Up', 'Left', 'Right', 'Down'] as b }
-          <button class="{buttonClasses[b]}" onmousedown={() => setButtonState(`button${b}`, true)} onmouseup={() => setButtonState(`dpad${b}`, false)}  onmouseleave={() => setButtonState(`dpad${b}`, false)}></button>
-          {#if b === 'Left'}
+        {#each ['12', '14', '15', '13'] as b }
+          <button class="{inputs[`button_${b}`].class}" onmousedown={() => buttonPressHandler(`button_${b}`, 255)} onmouseup={() => buttonReleaseHandler(`button_${b}`)}  onmouseleave={() => buttonReleaseHandler(`button_${b}`)}></button>
+          {#if b === '14'}
             <div class="w-2 h-4"></div>
           {/if}
         {/each}
@@ -241,10 +224,6 @@
         <div class="w-12 h-6 bg-gray-500 rounded-lg z-1"></div>
       </div>
     </div>
-    
-    {#if !gamepadConnected}
-      <h3>{gamepadName}</h3>
-    {/if}
 
     <div class="flex gap-2 pt-4">
       <div class="flex items-center">
@@ -260,5 +239,8 @@
 
   <div class="text-center">
     <h3>Log</h3>
+    {#if !coin_inserted}
+      <h3>Press a button to continue...</h3>
+    {/if}
   </div>
 </div>
