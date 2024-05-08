@@ -41,7 +41,6 @@
   joypad.on('connect', (e) => {
     console.log('Gamepad connected: ', e.gamepad.id);
     gamepad = e.gamepad;
-    gamepadConnected = true;
     gamepadName = gamepad.id;
 
     coin_inserted = true;
@@ -49,7 +48,6 @@
 
   joypad.on('disconnect', (e) => {
     console.log('Gamepad disconnected: ', e.gamepad.id);
-    gamepadConnected = false;
     gamepadName = '';
   });
 
@@ -59,7 +57,10 @@
     if (!buttonName) return;
     if (!inputs[buttonName]) return;
 
-    buttonPressHandler(buttonName, e.detail.button.value)
+    // Normalize the value of the button for Arduino (0-255)
+    const this_value = Math.round(e.detail.button.value * 255);
+
+    buttonPressHandler(buttonName, this_value)
 
   });
 
@@ -78,8 +79,8 @@
 
     inputs[b].value = value;
 
-    if (!buttonClasses[b]?.includes('ring'))
-      buttonClasses[b] = `${buttonClasses[b]} ring`;
+    if (!inputs[b].class?.includes('ring'))
+      inputs[b].class = `${inputs[b].class} ring`;
   }
 
   function buttonReleaseHandler(b) {
@@ -87,8 +88,8 @@
 
     inputs[b].value = 0;
 
-    if (buttonClasses[b]?.includes('ring'))
-      buttonClasses[b] = buttonClasses[b].replace('ring', '');
+    if (inputs[b].class?.includes('ring'))
+      inputs[b].class = inputs[b].class.replace('ring', '');
   }
 
   // Update the gamepad state every frame
@@ -125,8 +126,28 @@
   }
 
   // Send current state
-  function sendUDP() {
-    
+  async function sendUDP() {
+    if (!coin_inserted) return;
+
+    const data = [...Object.values(inputs).map(button => button.value), 0xff];
+
+    const response = await fetch(`/api/sendUDP`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        ip: ip,
+        port: port,
+        data: data
+      })
+    });
+
+    log.unshift(`${data}`);
+
+    // Shift the oldest log entry when the log reaches 100 entries
+    if (log.length > 100) log.pop();
+
   }
 
   // Call updateGamepadState every frame
@@ -136,6 +157,8 @@
       updateGamepadState();
       animationFrameId = requestAnimationFrame(update);
     });
+
+    setInterval(sendUDP, interval)
   });
 
   onDestroy(() => {
@@ -235,12 +258,23 @@
         <input type="number" id="port" bind:value={port} class="w-20 h-6">
       </div>
     </div>
+
+    {#if coin_inserted}
+    <div class="p-4">
+      <button onclick={() => coin_inserted = false}>Emergency Stop</button>
+    </div>
+    {/if}
   </div>
 
-  <div class="text-center">
+  <div class="">
     <h3>Log</h3>
     {#if !coin_inserted}
       <h3>Press a button to continue...</h3>
     {/if}
+    <div class="overflow-y-auto h-132">
+      {#each log as entry}
+        <p>{entry}</p>
+      {/each}
+    </div>
   </div>
 </div>
