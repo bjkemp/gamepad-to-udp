@@ -1,38 +1,25 @@
-# create-svelte
+# 🕹️ Gamepad to UDP 🚀
 
-Everything you need to build a Svelte project, powered by [`create-svelte`](https://github.com/sveltejs/kit/tree/main/packages/create-svelte).
+Welcome to Gamepad to UDP! This project is a Svelte component that transforms your joystick data into UDP packets and sends them to a receiving program. It also provides a user-friendly interface for joystick selection, IP/port configuration, and data visualization.
 
-## Creating a project
+## 🌟 Features
 
-If you're seeing this, you've probably already done this step. Congrats!
+* 🎮 User-friendly interface for joystick selection, IP/port configuration, and data visualization.
+* 📚 Uses the `joypad.js` library for seamless joystick access.
+* 📡 Transmits both axes and buttons (mapped to a 0-255 range).
+* 📝 Includes a null terminator at the end of each data packet for easy parsing.
+* ⏱️ Configurable sample rate for data transmission, allowing for fine-tuned control.
 
-```bash
-# create a new project in the current directory
-npm create svelte@latest
+## 🚀 Installation
 
-# create a new project in my-app
-npm create svelte@latest my-app
-```
+1. **Prerequisites:** Make sure you have Node.js and npm (or pnpm) installed on your machine.
+2. **Clone the repository:** Use `git clone https://github.com/bjkemp/gamepad-to-udp` to get a local copy of this project.
+3. **Install dependencies:** Navigate to the project directory and run `npm install` (or `pnpm install`) to install all the necessary packages.
 
-## Developing
+## 🎮 Usage
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+1. **Start the development server:** Run `npm run dev` (or `pnpm run dev`) to fire up the development server, usually accessible at `http://localhost:5173/`.
+2. **Select joystick and configure:** Use the intuitive UI to select your desired joystick and enter the destination IP address and port number.
+3. **Control:** Move the joystick axes and buttons to send data. The sent data will be displayed in the UI, giving you real-time feedback.
 
-```bash
-npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
-```
-
-## Building
-
-To create a production version of your app:
-
-```bash
-npm run build
-```
-
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://kit.svelte.dev/docs/adapters) for your target environment.
+Enjoy controlling your applications with your joystick! 🎉
