@@ -24,37 +24,35 @@
   let ip = $state('localhost')
 
   let inputs = $state({
-    axis_0: {value: 0},   // Left stick horizontal
-    axis_1: {value: 0},   // Left stick vertical
-    axis_2: {value: 0},   // Right stick horizontal
-    axis_3: {value: 0},   // Right stick vertical
+    axis_0: {value: 0, label: 'Left Stick Horizontal'},   // Left stick horizontal
+    axis_1: {value: 0, label: 'Left Stick Vertical'},   // Left stick vertical
+    axis_2: {value: 0, label: 'Right Stick Horizontal'},   // Right stick horizontal
+    axis_3: {value: 0, label: 'Right Stick Vertical'},   // Right stick vertical
 
-    button_0: {value: 0, pressed: false},   // Bottom button in right cluster
-    button_1: {value: 0, pressed: false},   // Right button in right cluster
-    button_2: {value: 0, pressed: false},   // Left button in right cluster
-    button_3: {value: 0, pressed: false},   // Top button in right cluster
-    button_4: {value: 0, pressed: false},   // Shoulder button left
-    button_5: {value: 0, pressed: false},   // Shoulder button right
-    button_6: {value: 0, pressed: false},   // Left trigger
-    button_7: {value: 0, pressed: false},   // Right trigger
-    button_8: {value: 0, pressed: false},   // Left button in center cluster
-    button_9: {value: 0, pressed: false},   // Right button in center cluster
-    button_10: {value: 0, pressed: false},  // Left stick press
-    button_11: {value: 0, pressed: false},  // Right stick press
-    button_12: {value: 0, pressed: false},  // Top button in left cluster
-    button_13: {value: 0, pressed: false},  // Bottom button in left cluster
-    button_14: {value: 0, pressed: false},  // Left button in left cluster
-    button_15: {value: 0, pressed: false},  // Right button in left cluster
-    button_16: {value: 0, pressed: false},  // Vendor button 1
-    button_17: {value: 0, pressed: false},  // Vendor button 2
+    button_0: {value: 0, label: 'Right Cluster Bottom'},   // Bottom button in right cluster
+    button_1: {value: 0, label: 'Right Cluster Right'},   // Right button in right cluster
+    button_2: {value: 0, label: 'Right Cluster Left'},   // Left button in right cluster
+    button_3: {value: 0, label: 'Right Cluster Top'},   // Top button in right cluster
+    button_4: {value: 0, label: 'Shoulder Button Left'},   // Shoulder button left
+    button_5: {value: 0, label: 'Shoulder Button Right'},   // Shoulder button right
+    button_6: {value: 0, label: 'Left Trigger'},   // Left trigger
+    button_7: {value: 0, label: 'Right Trigger'},   // Right trigger
+    button_8: {value: 0, label: 'Center Cluster Left'},   // Left button in center cluster
+    button_9: {value: 0, label: 'Center Cluster Right'},   // Right button in center cluster
+    button_10: {value: 0, label: 'Left Stick Press'},  // Left stick press
+    button_11: {value: 0, label: 'Right Stick Press'},  // Right stick press
+    button_12: {value: 0, label: 'Left Cluster Top'},  // Top button in left cluster
+    button_13: {value: 0, label: 'Left Cluster Bottom'},  // Bottom button in left cluster
+    button_14: {value: 0, label: 'Left Cluster Left'},  // Left button in left cluster
+    button_15: {value: 0, label: 'Left Cluster Right'},  // Right button in left cluster
+    button_16: {value: 0, label: 'Vendor Button 1'},  // Vendor button 1
+    button_17: {value: 0, label: 'Vendor Button 2'},  // Vendor button 2
   })
 
   let log = $state([])
 
   const setButtonState = (button, state) => {
     if (!inputs[button]) return;
-
-    inputs[button].pressed = state;
 
     if (state)
       inputs[button].value = 1
@@ -69,13 +67,6 @@
     gamepad = e.gamepad;
     gamepadConnected = true;
     gamepadName = gamepad.id;
-
-    // Populate inputs with gamepad buttons
-    gamepad.buttons.forEach((button, i) => {
-      inputs[`button_${i}`] = {pressed: button.pressed, value: button.value};
-      
-    });
-
   });
 
   joypad.on('disconnect', (e) => {
@@ -90,7 +81,7 @@
     if (!buttonName) return;
     if (!inputs[buttonName]) return;
 
-    buttonPressHandler(buttonName, e.detail.button.pressed, e.detail.button.value)
+    buttonPressHandler(buttonName, e.detail.button.value)
 
   });
 
@@ -102,10 +93,8 @@
     buttonReleaseHandler(buttonName)
   });
 
-  function buttonPressHandler(b, pressed, value) {
+  function buttonPressHandler(b, value) {
     if (!inputs) return;
-
-    // inputs[b].pressed = pressed;
     // inputs[b].value = value;
 
     if (!buttonClasses[b]?.includes('ring'))
@@ -115,7 +104,6 @@
   function buttonReleaseHandler(b) {
     if (!inputs[b]) return;
 
-    // inputs[b].pressed = false;
     // inputs[b].value = 0;
 
     if (buttonClasses[b]?.includes('ring'))
@@ -132,29 +120,27 @@
 
     // Get gamepad state
     const this_state = {}
-    for (let i = 0; i < gamepad.buttons.length; i++) {
-      let this_value = gamepad.buttons[i].value;
 
-      // Normalize the value of the button to 0 through 255
-      
+    // Read the value of all axes
+    for (let i = 0; i < gamepad.axes.length; i++) {
+      let this_value = gamepad.axes[i];
 
-
-      this_state[`button_${i}`] = {value: gamepad.buttons[i].value, pressed: gamepad.buttons[i].value > 0.000001};
+      // Normalize the value of the axis for Arduino (0-255)
+      this_value = Math.round((this_value + 1) * 127.5);
+      this_state[`axis_${i}`] = {value: this_value, label: inputs[`axis_${i}`]?.label};
     }
 
     // Read the value of all buttons
-    
+    for (let i = 0; i < gamepad.buttons.length; i++) {
+      let this_value = gamepad.buttons[i].value;
 
-    // // Read the value of the analog triggers
-    // const leftTriggerValue = gamepad.buttons[6].value;
-    // const rightTriggerValue = gamepad.buttons[7].value;
+      // Normalize the value of the button for Arduino (0-255)
+      this_value = Math.round(this_value * 255);
+      this_state[`button_${i}`] = {value: this_value, label: inputs[`button_${i}`]?.label};
+    }
 
     // Update the inputs object
-    inputs = {
-      ...this_state,
-      // button_6: {value: leftTriggerValue, pressed: leftTriggerValue > 0.05},
-      // button_7: {value: rightTriggerValue, pressed: rightTriggerValue > 0.05},
-    };
+    inputs = {...this_state};
   }
 
   // Call updateGamepadState every frame
@@ -181,7 +167,7 @@
       <thead>
         <tr>
           <th>Input</th>
-          <th>Pressed</th>
+          <th>Label</th>
           <th>Value</th>
         </tr>
       </thead>
@@ -189,7 +175,7 @@
         {#each Object.keys(inputs) as input}
           <tr>
             <td>{input}</td>
-            <td>{inputs[input]?.pressed}</td>
+            <td>{inputs[input]?.label}</td>
             <td>{inputs[input]?.value}</td>
           </tr>
         {/each}
@@ -256,10 +242,11 @@
       </div>
     </div>
     
-    <h3>{gamepadName}</h3>
+    {#if !gamepadConnected}
+      <h3>{gamepadName}</h3>
+    {/if}
 
-    <div class="flex gap-2">
-
+    <div class="flex gap-2 pt-4">
       <div class="flex items-center">
         <label for="ip" class="mr-1">IP:</label>
         <input type="text" id="ip" bind:value={ip} class="w-20 h-6">
